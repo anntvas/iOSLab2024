@@ -9,33 +9,48 @@ import XCTest
 
 final class HealthReminderUITests: XCTestCase {
 
+    private var app: XCUIApplication!
+
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launch()
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    /// Тест создания напоминания через UI
+    func testCreateReminder() throws {
+        // Нажимаем кнопку добавления
+        app.navigationBars.buttons["addButton"].tap()
+
+        // Вводим заголовок
+        let titleField = app.textFields["ReminderTitleField"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 2))
+        titleField.tap()
+        titleField.typeText("Проверка UI")
+
+        // Сохраняем
+        app.buttons["SaveReminderButton"].tap()
+
+        // Проверяем, что напоминание появилось в списке
+        let reminderCell = app.staticTexts["reminderTitleLabel"]
+        let exists = reminderCell.waitForExistence(timeout: 2)
+        XCTAssertTrue(exists)
     }
 
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+    /// Тест перехода по диплинку к ReminderDetailView
+    func testOpenReminderViaLocalNotificationDeeplink() throws {
+        let uuid = UUID().uuidString
+        app.launchArguments = [
+            "-uitest-notification",
+            "-reminderId", uuid,
+            "-ui-testing-create-reminder", uuid
+        ]
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let detailTitle = app.staticTexts["ReminderDetailTitle"]
+        XCTAssertTrue(detailTitle.waitForExistence(timeout: 5), "Reminder detail screen did not appear after simulating notification tap")
     }
 
-    func testLaunchPerformance() throws {
-        if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
-            // This measures how long it takes to launch your application.
-            measure(metrics: [XCTApplicationLaunchMetric()]) {
-                XCUIApplication().launch()
-            }
-        }
-    }
+
+
 }
